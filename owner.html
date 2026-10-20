@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Owner Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="logo">🍔 FoodApp <small>Owner</small></a>
+    <div class="nav-links">
+      <a href="index.html">View shop</a>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <section class="panel">
+    <h2>Add menu item</h2>
+    <div class="add-row">
+      <input id="name" placeholder="Item name">
+      <input id="price" type="number" placeholder="Price (₹)">
+      <button onclick="addItem()">Add item</button>
+    </div>
+  </section>
+
+  <h2 class="section-title">Menu &amp; deals</h2>
+  <main id="menu" class="menu"></main>
+
+  <h2 class="section-title">Orders</h2>
+    <div class="panel">
+    <b>Waiting queue:</b> <span id="queue-view">empty</span>
+    <button onclick="nextOrder()">Take next order</button>
+  </div>
+  <div id="orders" class="menu"></div>
+
+  <script src="owner.js"></script>
+</body>
+</html>

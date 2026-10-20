@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Food App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">🍔 FoodApp</a>
+    <div class="nav-links">
+      <a href="deals.html">Deals now</a>
+      <a href="plan.html">Meal plan</a>
+      <div id="user-bar"></div>
+      <button onclick="toggleCart()">🛒 Cart (<span id="cart-count">0</span>)</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1>Hungry? We've got you.</h1>
+    <input id="search" placeholder="Search for dosa, biryani, pizza...">
+  </header>
+
+  <div class="filters">
+    <button class="chip active" id="chip-all" onclick="setFilter(false)">All</button>
+    <button class="chip" id="chip-deals" onclick="setFilter(true)">🔥 Deals</button>
+    <button class="chip" id="chip-fav" onclick="toggleFavOnly()">♥ Favorites</button>
+       <select id="restaurant-select" class="chip"></select>
+  </div>
+
+  <main id="menu" class="menu"></main>
+
+  <aside id="cart-panel" class="cart-panel">
+    <div class="cart-head">
+      <h2>Your cart</h2>
+      <button onclick="toggleCart()">✕</button>
+    </div>
+    <div id="cart-list"></div>
+    <div class="cart-total"><span>Total</span><span>₹<span id="total">0</span></span></div>
+    <button id="place-order" onclick="placeOrder()">Place order</button>
+  </aside>
+
+  <script src="script.js"></script>
+</body>
+</html>

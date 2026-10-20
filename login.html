@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth">
+  <div class="auth-box">
+    <a href="index.html" class="logo">🍔 FoodApp</a>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="showTab('login')">Login</button>
+      <button class="tab" id="tab-register" onclick="showTab('register')">Register</button>
+    </div>
+
+    <div id="login-form">
+      <input id="login-email" type="email" placeholder="Email">
+      <input id="login-password" type="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <input id="reg-name" placeholder="Name">
+      <input id="reg-email" type="email" placeholder="Email">
+      <input id="reg-password" type="password" placeholder="Password">
+      <select id="reg-role">
+        <option value="customer">Customer</option>
+        <option value="owner">Restaurant owner</option>
+      </select>
+      <input id="reg-restaurant" placeholder="Restaurant name (owners only)">
+            <select id="reg-area">
+        <option value="">Choose your area</option>
+        <option>Kattankulathur</option>
+        <option>Potheri</option>
+        <option>Guduvanchery</option>
+        <option>Vandalur</option>
+        <option>Maraimalai Nagar</option>
+        <option>Singaperumal Koil</option>
+        <option>Tambaram</option>
+      </select>
+       <input id="reg-address" placeholder="Address: door no, street (customers)">
+      <button onclick="register()">Register</button>
+    </div>
+
+    <p id="message" class="message"></p>
+  </div>
+  <script src="auth.js"></script>
+</body>
+</html>
