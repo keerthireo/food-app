@@ -136,3 +136,4 @@ button.danger:hover { background: #b3402f; color: #fff; }
 .empty a { color: var(--accent); font-weight: 600; }
 .hero p { opacity: .9; }
 .card .info .fav { background: none; border: none; color: #c0392b; font-size: 24px; width: auto; padding: 0 0 6px; cursor: pointer; }
+.card .thumb img { width: 100%; height: 100%; object-fit: cover; }

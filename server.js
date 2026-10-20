@@ -3,6 +3,8 @@ const session = require("express-session");
 const bcrypt = require("bcryptjs");
 const { DatabaseSync } = require("node:sqlite");
 const { Queue, Graph, buildCityMap } = require("./dsa");
+const fs = require("fs");
+const path = require("path");
 const cityMap = buildCityMap();
 
 const app = express();
@@ -43,11 +45,12 @@ try { db.exec("ALTER TABLE menu_items ADD COLUMN deal_expires_at TEXT"); } catch
 try { db.exec("ALTER TABLE users ADD COLUMN restaurant_name TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN area TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN address TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE menu_items ADD COLUMN image TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE menu_items ADD COLUMN restaurant_id INTEGER"); } catch (e) {}
 try { db.exec("ALTER TABLE orders ADD COLUMN restaurant_id INTEGER"); } catch (e) {}
 db.exec("CREATE TABLE IF NOT EXISTS favorites (user_id INTEGER, menu_item_id INTEGER, PRIMARY KEY (user_id, menu_item_id))");
 db.exec("CREATE TABLE IF NOT EXISTS meal_plans (user_id INTEGER, day TEXT, menu_item_id INTEGER, PRIMARY KEY (user_id, day))");
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use(session({ secret: "food-app-secret", resave: false, saveUninitialized: false }));
 app.use(express.static(__dirname));
 
@@ -121,18 +124,26 @@ app.get("/api/me", (req, res) => {
   } 
 });
 
-app.get("/api/menu", (req, res) => {
-   const items = db.prepare("SELECT menu_items.*, users.restaurant_name FROM menu_items LEFT JOIN users ON users.id = menu_items.restaurant_id").all();
-  const result = items.map((item) => ({
-    ...item,
-    on_deal: !!dealActive(item),
-    current_price: currentPrice(item)
-  }));
-  res.json(result);
-});
-app.get("/api/my-menu", onlyOwner, (req, res) => {
-  const items = db.prepare("SELECT * FROM menu_items WHERE restaurant_id = ?").all(req.session.user.id);
-  res.json(items.map((item) => ({ ...item, on_deal: !!dealActive(item), current_price: currentPrice(item) })));
+app.post("/api/menu", onlyOwner, (req, res) => {
+  const { name, price, image } = req.body;
+  if (!name || !price) {
+    return res.status(400).json({ error: "Name and price are required" });
+  }
+  let imagePath = null;
+  if (image) {
+    const match = /^data:image\/(png|jpeg|webp);base64,(.+)$/.exec(image);
+    if (!match) {
+      return res.status(400).json({ error: "Please choose a PNG, JPG or WEBP image" });
+    }
+    fs.mkdirSync(path.join(__dirname, "images"), { recursive: true });
+    const ext = match[1] === "jpeg" ? "jpg" : match[1];
+    const fileName = "food-" + Date.now() + "-" + Math.floor(Math.random() * 1000) + "." + ext;
+    fs.writeFileSync(path.join(__dirname, "images", fileName), Buffer.from(match[2], "base64"));
+    imagePath = "images/" + fileName;
+  }
+  db.prepare("INSERT INTO menu_items (name, price, restaurant_id, image) VALUES (?, ?, ?, ?)")
+    .run(name, Number(price), req.session.user.id, imagePath);
+  res.json({ message: "Item added" });
 });
 
 app.post("/api/menu", onlyOwner, (req, res) => {

@@ -46,7 +46,7 @@ async function loadMenu() {
         '<button onclick="setDeal(' + item.id + ')">Set deal</button>';
     }
     menuDiv.innerHTML +=
-      '<div class="card"><div class="info">' +
+      '<div class="card">' + (item.image ? '<img src="' + esc(item.image) + '" alt="">' : "") + '<div class="info">' +
       "<h3>" + esc(item.name) + "</h3>" +
       '<p class="price">₹' + item.price + "</p>" +
       '<button class="danger" onclick="deleteItem(' + item.id + ')">Delete</button>' +
@@ -54,6 +54,7 @@ async function loadMenu() {
       "</div></div>";
   }
 }
+
 
 async function addItem() {
   let name = document.getElementById("name").value;

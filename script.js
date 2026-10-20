@@ -87,7 +87,7 @@ function renderMenu() {
 
     html +=
       '<div class="card">' +
-        '<div class="thumb">' + emojiFor(item.name) + badge + "</div>" +
+        '<div class="thumb">' + (item.image ? '<img src="' + esc(item.image) + '" alt="">' : emojiFor(item.name)) + badge + "</div>" +
         '<div class="info">' +
           "<h3>" + esc(item.name) + "</h3>" +
           '<p class="muted">' + esc(item.restaurant_name || "") + "</p>" +
