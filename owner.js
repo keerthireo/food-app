@@ -55,24 +55,43 @@ async function loadMenu() {
   }
 }
 
-
 async function addItem() {
   let name = document.getElementById("name").value;
   let price = document.getElementById("price").value;
+  let file = document.getElementById("photo").files[0];
 
   if (!name || !price) {
     toast("Enter a name and a price");
     return;
   }
+  if (file && file.size > 2 * 1024 * 1024) {
+    toast("Photo must be under 2 MB");
+    return;
+  }
 
-  await fetch("/api/menu", {
+  let image = null;
+  if (file) {
+    image = await new Promise(function (resolve) {
+      let reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let response = await fetch("/api/menu", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name, price: price })
+    body: JSON.stringify({ name: name, price: price, image: image })
   });
+  let data = await response.json();
+  if (!response.ok) {
+    toast(data.error);
+    return;
+  }
 
   document.getElementById("name").value = "";
   document.getElementById("price").value = "";
+  document.getElementById("photo").value = "";
   toast("Item added");
   loadMenu();
 }

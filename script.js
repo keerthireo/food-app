@@ -90,8 +90,8 @@ function renderMenu() {
         '<div class="thumb">' + (item.image ? '<img src="' + esc(item.image) + '" alt="">' : emojiFor(item.name)) + badge + "</div>" +
         '<div class="info">' +
           "<h3>" + esc(item.name) + "</h3>" +
-          '<p class="muted">' + esc(item.restaurant_name || "") + "</p>" +
-            '<button class="fav" onclick="toggleFavorite(' + item.id + ')">' + (favorites.includes(item.id) ? "♥" : "♡") + "</button>" +
+                   '<div class="rest-row"><p class="muted">' + esc(item.restaurant_name || "") + "</p>" +
+            '<button class="fav" onclick="toggleFavorite(' + item.id + ')">' + (favorites.includes(item.id) ? "♥" : "♡") + "</button></div>" +
           '<p class="price">' + priceHtml + "</p>" +
           '<button onclick="addToCart(' + item.id + ')">Add to cart</button>' +
         "</div>" +

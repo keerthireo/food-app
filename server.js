@@ -124,6 +124,21 @@ app.get("/api/me", (req, res) => {
   } 
 });
 
+app.get("/api/menu", (req, res) => {
+  const items = db.prepare("SELECT menu_items.*, users.restaurant_name FROM menu_items LEFT JOIN users ON users.id = menu_items.restaurant_id").all();
+  const result = items.map((item) => ({
+    ...item,
+    on_deal: !!dealActive(item),
+    current_price: currentPrice(item)
+  }));
+  res.json(result);
+});
+
+app.get("/api/my-menu", onlyOwner, (req, res) => {
+  const items = db.prepare("SELECT * FROM menu_items WHERE restaurant_id = ?").all(req.session.user.id);
+  res.json(items.map((item) => ({ ...item, on_deal: !!dealActive(item), current_price: currentPrice(item) })));
+});
+
 app.post("/api/menu", onlyOwner, (req, res) => {
   const { name, price, image } = req.body;
   if (!name || !price) {
@@ -143,15 +158,6 @@ app.post("/api/menu", onlyOwner, (req, res) => {
   }
   db.prepare("INSERT INTO menu_items (name, price, restaurant_id, image) VALUES (?, ?, ?, ?)")
     .run(name, Number(price), req.session.user.id, imagePath);
-  res.json({ message: "Item added" });
-});
-
-app.post("/api/menu", onlyOwner, (req, res) => {
-  const { name, price } = req.body;
-  if (!name || !price) {
-    return res.status(400).json({ error: "Name and price are required" });
-  }
-  db.prepare("INSERT INTO menu_items (name, price, restaurant_id) VALUES (?, ?, ?)").run(name, Number(price), req.session.user.id);
   res.json({ message: "Item added" });
 });
 
