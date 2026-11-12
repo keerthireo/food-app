@@ -153,6 +153,8 @@ async function loadOrders() {
       '<p class="muted">📍 ' + esc(o.customer_address || "") + ", " + esc(o.customer_area || "") + "</p>" +
       "<ul>" + lines + "</ul>" +
       '<p class="price">Total: ₹' + o.total + "</p>" +
+      '<p class="muted">💳 ' + (o.payment_method === "UPI" ? "UPI" : o.payment_method === "CARD" ? "Card" : "Cash on delivery") +
+        " - " + esc(o.payment_status) + "</p>" +
       '<p class="muted">' + o.created_at + "</p><br>" +
       '<select onchange="updateStatus(' + o.id + ', this.value)">' + options + "</select>" +
       "</div></div>";

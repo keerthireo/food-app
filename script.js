@@ -181,6 +181,27 @@ function showCart() {
   document.getElementById("place-order").disabled = cart.length === 0;
 }
 
+// Show the UPI / card boxes only for the chosen payment method
+function showPayFields() {
+  let method = document.querySelector('input[name="pay"]:checked').value;
+  document.getElementById("pay-upi").style.display = method === "UPI" ? "block" : "none";
+  document.getElementById("pay-card").style.display = method === "CARD" ? "block" : "none";
+  let button = document.getElementById("place-order");
+  button.innerText = method === "COD" ? "Place order" : "Pay & place order";
+}
+
+// Collect the payment details typed by the customer
+function readPayment() {
+  let method = document.querySelector('input[name="pay"]:checked').value;
+  return {
+    method: method,
+    upiId: document.getElementById("upi-id").value,
+    cardNumber: document.getElementById("card-number").value,
+    expiry: document.getElementById("card-expiry").value,
+    cvv: document.getElementById("card-cvv").value
+  };
+}
+
 async function placeOrder() {
   if (cart.length === 0) {
     toast("Your cart is empty");
@@ -189,15 +210,25 @@ async function placeOrder() {
   let response = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items: cart.map(function (i) { return i.id; }) })
+    body: JSON.stringify({
+      items: cart.map(function (i) { return i.id; }),
+      payment: readPayment()
+    })
   });
   let data = await response.json();
 
   if (response.ok) {
     cart = [];
+    document.getElementById("card-number").value = "";
+    document.getElementById("card-expiry").value = "";
+    document.getElementById("card-cvv").value = "";
     showCart();
     toggleCart();
-    toast("Order placed! See it under My orders.");
+    if (data.payment_status === "Paid") {
+      toast("Payment successful (" + data.payment_ref + "). Order placed!");
+    } else {
+      toast("Order placed! Pay cash on delivery.");
+    }
   } else {
     toast(data.error);
     if (response.status === 403) {

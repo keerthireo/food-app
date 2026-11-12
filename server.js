@@ -48,6 +48,11 @@ try { db.exec("ALTER TABLE users ADD COLUMN address TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE menu_items ADD COLUMN image TEXT"); } catch (e) {}
 try { db.exec("ALTER TABLE menu_items ADD COLUMN restaurant_id INTEGER"); } catch (e) {}
 try { db.exec("ALTER TABLE orders ADD COLUMN restaurant_id INTEGER"); } catch (e) {}
+// Simulated payment: method (COD / UPI / CARD), status (Paid / Pending), a reference and the last 4 card digits
+try { db.exec("ALTER TABLE orders ADD COLUMN payment_method TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE orders ADD COLUMN payment_status TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE orders ADD COLUMN payment_ref TEXT"); } catch (e) {}
+try { db.exec("ALTER TABLE orders ADD COLUMN card_last4 TEXT"); } catch (e) {}
 db.exec("CREATE TABLE IF NOT EXISTS favorites (user_id INTEGER, menu_item_id INTEGER, PRIMARY KEY (user_id, menu_item_id))");
 db.exec("CREATE TABLE IF NOT EXISTS meal_plans (user_id INTEGER, day TEXT, menu_item_id INTEGER, PRIMARY KEY (user_id, day))");
 app.use(express.json({ limit: "5mb" }));
@@ -198,6 +203,74 @@ app.delete("/api/deals/:id", onlyOwner, (req, res) => {
   res.json({ message: "Deal removed" });
 });
 
+// ---------- SIMULATED PAYMENT ----------
+// No real money moves and no real bank is contacted. This only imitates a payment gateway:
+// it checks the details, then answers "paid", "pending" (cash on delivery) or "declined".
+const PAYMENT_METHODS = ["COD", "UPI", "CARD"];
+
+// Luhn algorithm: the checksum that every real card number must pass
+function luhnValid(number) {
+  let sum = 0;
+  let double = false;
+  for (let i = number.length - 1; i >= 0; i--) {
+    let digit = Number(number[i]);
+    if (double) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    double = !double;
+  }
+  return sum % 10 === 0;
+}
+
+function simulatePayment(payment) {
+  const method = payment && payment.method;
+  if (!PAYMENT_METHODS.includes(method)) {
+    return { ok: false, error: "Please choose a payment method" };
+  }
+
+  if (method === "COD") {
+    return { ok: true, method: method, status: "Pending", ref: null, last4: null };
+  }
+
+  const ref = "SIM-" + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 1000);
+
+  if (method === "UPI") {
+    const upi = String(payment.upiId || "").trim();
+    if (!/^[A-Za-z0-9._-]{2,}@[A-Za-z]{2,}$/.test(upi)) {
+      return { ok: false, error: "Enter a valid UPI ID, for example name@upi" };
+    }
+    return { ok: true, method: method, status: "Paid", ref: ref, last4: null };
+  }
+
+  // CARD
+  const number = String(payment.cardNumber || "").replace(/\s+/g, "");
+  const expiry = String(payment.expiry || "").trim();
+  const cvv = String(payment.cvv || "").trim();
+  if (!/^\d{16}$/.test(number) || !luhnValid(number)) {
+    return { ok: false, error: "Card number is not valid" };
+  }
+  const m = /^(\d{2})\/(\d{2})$/.exec(expiry);
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > 12) {
+    return { ok: false, error: "Enter the expiry as MM/YY" };
+  }
+  const now = new Date();
+  const expiresAt = new Date(2000 + Number(m[2]), Number(m[1]), 1);   // first day after the expiry month
+  if (expiresAt <= now) {
+    return { ok: false, error: "This card has expired" };
+  }
+  if (!/^\d{3}$/.test(cvv)) {
+    return { ok: false, error: "CVV must be 3 digits" };
+  }
+  // Test card that is always declined (like the test cards of real gateways)
+  if (number === "4000000000000002") {
+    return { ok: false, error: "Payment declined by the bank (test card). Try another card." };
+  }
+  // We keep only the last 4 digits. The full number and the CVV are never stored.
+  return { ok: true, method: method, status: "Paid", ref: ref, last4: number.slice(-4) };
+}
+
 app.post("/api/orders", onlyCustomer, (req, res) => {
   const ids = req.body.items;
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -225,9 +298,19 @@ app.post("/api/orders", onlyCustomer, (req, res) => {
     return res.status(400).json({ error: "Please order from one restaurant at a time" });
   }
 
+  // Pay first. If the payment fails, no order is created.
+  const pay = simulatePayment(req.body.payment || { method: "COD" });
+  if (!pay.ok) {
+    return res.status(402).json({ error: pay.error });
+  }
+
   const result = db
-    .prepare("INSERT INTO orders (user_id, total, status, created_at, restaurant_id) VALUES (?, ?, ?, ?, ?)")
-    .run(req.session.user.id, total, "Placed", new Date().toLocaleString(), restaurantId);
+    .prepare(
+      "INSERT INTO orders (user_id, total, status, created_at, restaurant_id, payment_method, payment_status, payment_ref, card_last4) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .run(req.session.user.id, total, "Placed", new Date().toLocaleString(), restaurantId,
+         pay.method, pay.status, pay.ref, pay.last4);
   const orderId = Number(result.lastInsertRowid);
   getQueue(restaurantId).enqueue(orderId);
 
@@ -238,7 +321,7 @@ app.post("/api/orders", onlyCustomer, (req, res) => {
     insertLine.run(orderId, line.item.id, line.item.name, currentPrice(line.item), line.qty);
   }
 
-  res.json({ message: "Order placed", orderId: orderId });
+  res.json({ message: "Order placed", orderId: orderId, payment_method: pay.method, payment_status: pay.status, payment_ref: pay.ref });
 });
 
 app.get("/api/my-orders", onlyCustomer, (req, res) => {
@@ -262,6 +345,10 @@ app.get("/api/my-orders", onlyCustomer, (req, res) => {
       status: o.status,
       created_at: o.created_at,
       items: items,
+      payment_method: o.payment_method || "COD",
+      payment_status: o.payment_status || "Pending",
+      payment_ref: o.payment_ref,
+      card_last4: o.card_last4,
       restaurant_name: o.restaurant_name,
       delivery_area: me.area,
       delivery_address: me.address,
@@ -276,7 +363,7 @@ const STATUSES = ["Placed", "Preparing", "Out for delivery", "Delivered"];
 app.get("/api/orders", onlyOwner, (req, res) => {
   const orders = db
     .prepare(
-      "SELECT orders.id, orders.total, orders.status, orders.created_at, users.name AS customer, users.address AS customer_address, users.area AS customer_area "  +
+      "SELECT orders.id, orders.total, orders.status, orders.created_at, orders.payment_method, orders.payment_status, users.name AS customer, users.address AS customer_address, users.area AS customer_area "  +
        "FROM orders JOIN users ON users.id = orders.user_id WHERE orders.restaurant_id = ? ORDER BY orders.id DESC"
     )
      .all(req.session.user.id);
@@ -290,6 +377,8 @@ app.get("/api/orders", onlyOwner, (req, res) => {
       total: o.total,
       status: o.status,
       created_at: o.created_at,
+      payment_method: o.payment_method || "COD",
+      payment_status: o.payment_status || "Pending",
       customer: o.customer,
       customer_address: o.customer_address,
       customer_area: o.customer_area,
@@ -305,6 +394,11 @@ app.put("/api/orders/:id/status", onlyOwner, (req, res) => {
     return res.status(400).json({ error: "Invalid status" });
   }
   db.prepare("UPDATE orders SET status = ? WHERE id = ? AND restaurant_id = ?").run(status, req.params.id, req.session.user.id);
+  // Cash on delivery is collected when the food is handed over, so it becomes Paid on delivery
+  if (status === "Delivered") {
+    db.prepare("UPDATE orders SET payment_status = 'Paid' WHERE id = ? AND restaurant_id = ? AND payment_method = 'COD'")
+      .run(req.params.id, req.session.user.id);
+  }
   res.json({ message: "Status updated" });
 });
 // List the item ids this customer has saved

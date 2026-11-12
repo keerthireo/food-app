@@ -142,3 +142,11 @@ button.danger:hover { background: #b3402f; color: #fff; }
 .rest-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .rest-row .muted { margin: 0; }
 .card .info .rest-row .fav { padding: 0; font-size: 22px; }
+/* ---------- Simulated payment box in the cart ---------- */
+.pay-box { border-top: 1px solid #e6d8c3; margin-top: 8px; padding-top: 12px; }
+.pay-box h3 { margin: 0 0 8px; font-size: 1rem; }
+.pay-option { display: block; padding: 4px 0; cursor: pointer; }
+.pay-fields { margin: 8px 0; }
+.pay-fields input { width: 100%; padding: 10px 12px; margin: 4px 0; border: 1px solid #e0cfb5; border-radius: 10px; font: inherit; background: #fffdf9; }
+.pay-row { display: flex; gap: 8px; }
+.pay-hint { font-size: 0.8rem; color: #8a7565; margin: 6px 0; }

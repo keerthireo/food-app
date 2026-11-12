@@ -41,7 +41,26 @@
     </div>
     <div id="cart-list"></div>
     <div class="cart-total"><span>Total</span><span>₹<span id="total">0</span></span></div>
-    <button id="place-order" onclick="placeOrder()">Place order</button>
+    <div class="pay-box">
+      <h3>Payment</h3>
+      <label class="pay-option"><input type="radio" name="pay" value="COD" checked onchange="showPayFields()"> Cash on delivery</label>
+      <label class="pay-option"><input type="radio" name="pay" value="UPI" onchange="showPayFields()"> UPI</label>
+      <label class="pay-option"><input type="radio" name="pay" value="CARD" onchange="showPayFields()"> Credit / Debit card</label>
+
+      <div id="pay-upi" class="pay-fields" style="display:none">
+        <input id="upi-id" placeholder="UPI ID (name@upi)">
+      </div>
+      <div id="pay-card" class="pay-fields" style="display:none">
+        <input id="card-number" placeholder="Card number (16 digits)" maxlength="19">
+        <div class="pay-row">
+          <input id="card-expiry" placeholder="MM/YY" maxlength="5">
+          <input id="card-cvv" placeholder="CVV" maxlength="3" type="password">
+        </div>
+        <p class="pay-hint">Demo: use 4242 4242 4242 4242. Test card 4000 0000 0000 0002 is declined.</p>
+      </div>
+      <p class="pay-hint">Simulated payment. No real money is charged.</p>
+    </div>
+    <button id="place-order" onclick="placeOrder()">Pay &amp; place order</button>
   </aside>
 
   <script src="script.js"></script>
